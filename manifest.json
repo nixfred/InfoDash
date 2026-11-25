@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "nixfred.infodash",
   "name": "InfoDash",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "author": "Fred Nix & Larry",
   "license": "MIT",
   "description": "InfoDash: a HUD for the Omarchy wallpaper, with nine skins (Star Trek by default): devices and USB topology, telemetry gauges, GPU, PipeWire routing, network and PCIe links, fleet hosts, AI sessions, and a live system ledger. Theme-driven. Summonable overlay.",

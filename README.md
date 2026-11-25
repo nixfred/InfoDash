@@ -7,10 +7,10 @@
   <img alt="Omarchy plugin" src="https://img.shields.io/badge/Omarchy-plugin-0c9793?style=flat-square">
   <img alt="Quickshell" src="https://img.shields.io/badge/Quickshell-QML-17a07e?style=flat-square">
   <img alt="bun" src="https://img.shields.io/badge/collector-bun-89e0b7?style=flat-square">
-  <img alt="39 tests" src="https://img.shields.io/badge/tests-39%20passing-52ca9a?style=flat-square">
+  <img alt="46 tests" src="https://img.shields.io/badge/tests-46%20passing-52ca9a?style=flat-square">
 </p>
 
-**InfoDash** paints a full live dashboard over your [Omarchy](https://omarchy.org) wallpaper: CPU, memory, GPU and storage gauges, USB topology, network and PCIe links, PipeWire routing, your tailnet, and the **AI coding sessions** running on this machine or on any other machine you can ssh to. One key hides your windows behind it. Another key shows or hides the panels.
+**InfoDash** paints a full live dashboard over your [Omarchy](https://omarchy.org) wallpaper: a CPU speedometer with a dial for every CPU, memory, GPU and storage gauges, USB topology, network and PCIe links, PipeWire routing, your tailnet, and the **AI coding sessions** running on this machine or on any other machine you can ssh to. One key hides your windows behind it. Another key shows or hides the panels.
 
 ![InfoDash on the Star Trek skin](docs/infodash-startrek.jpg)
 
@@ -23,6 +23,7 @@
 | | |
 |---|---|
 | **Nine skins** | Star Trek (the default), Cyberpunk, Steampunk, Art Deco, 8-bit, Blueprint, Nostromo, Cassette, Diesel. One small chip in the header switches them. |
+| **CPU speedometers** | One big needle speedometer for total load, with temperature and average clock under it, and a small one for every logical CPU. The grid always fills its rows, and anything past 85% turns red. |
 | **Drag and snap layout** | Hold `CTRL`, drag a panel to move it, drag an edge or corner to resize it. It snaps to a 48 x 24 grid and the other panels slide out of the way. Saved per monitor. |
 | **AI sessions on any host** | Every Claude Code, Codex and other agent session with its status, title, model and last message. Point the panel at any tailnet machine from the host picker. |
 | **Click to jump** | With [herdr](https://github.com/ogulcancelik/herdr), clicking a session selects it in herdr and moves *your* focus to the herdr window. A session that is not open in herdr is shown but does nothing. |
@@ -166,6 +167,7 @@ The window is found by what is running inside it (a herdr client, or an `ssh` to
 | `fontScale` | InfoDash text and UI size, 0.8 to 1.5 |
 | `aiHost` | tailnet host whose AI sessions are shown; empty means this machine |
 | `fleet` | optional list of tailnet host names to pin in the fleet panel (default: the first 8 peers) |
+| `fleetIgnore` | optional list of tailnet host names never to show, for example a machine that belongs to another network |
 | `snippetStrip` | optional regular expression removed from the start of each last-message snippet, for agents that begin every reply with a banner |
 
 Panel layouts are in `layout.json` in the same folder, one layout per monitor name.

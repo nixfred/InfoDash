@@ -4,17 +4,21 @@
 // refreshes on its own period into a cache; a tick only assembles the cache plus
 // the cheap /proc counters, so a slow tool can never stall the stream.
 //
-//   bun collector.ts [--interval 2000] [--fleet host1,host2] [--once]
-//   --fleet pins tailnet hosts to show (by tailscale host name); without it the first 8 peers are shown.
+//   bun collector.ts [--interval 2000] [--fleet host1,host2] [--ignore host3] [--once]
+//   --fleet pins tailnet hosts to show (by tailscale host or DNS name); without it the first 8 peers are shown.
+//   --ignore names tailnet hosts that are never shown, pinned or not.
 
 import { readFileSync, readdirSync, readlinkSync, realpathSync } from "node:fs";
 import { hostname, homedir } from "node:os";
 import { rename } from "node:fs/promises";
+import { pickFleet } from "./fleet.ts";
 
 const argv = process.argv.slice(2);
 const opt = (name: string, dflt: string) => { const i = argv.indexOf(name); return i >= 0 && argv[i + 1] ? argv[i + 1] : dflt; };
 const INTERVAL = Math.max(500, Number(opt("--interval", "2000")) || 2000);
-const FLEET = opt("--fleet", "").split(",").map((s) => s.trim()).filter(Boolean);
+const names = (s: string) => s.split(",").map((x) => x.trim().toLowerCase()).filter(Boolean);
+const FLEET = names(opt("--fleet", ""));
+const IGNORE = names(opt("--ignore", ""));
 const ONCE = argv.includes("--once");
 const HISTORY = 45;
 
@@ -106,11 +110,12 @@ function cpu(hist: number[]) {
     if (tempC !== null) break;
   }
   const t = busy[0] ?? 0;
-  const physical = new Set((info.match(/^core id\s*:\s*\d+$/gm) || [])).size;
+  // core ids repeat across sockets, so a core is a (socket, core id) pair
+  const physical = new Set(info.split("\n\n").map((b) => { const c = b.match(/^core id\s*:\s*(\d+)$/m); return c ? (b.match(/^physical id\s*:\s*(\d+)$/m)?.[1] ?? "0") + ":" + c[1] : ""; }).filter(Boolean)).size;
   return {
     model, threads: Math.max(0, cur.length - 1), cores: physical || Math.max(0, cur.length - 1),
     busyPct: t, avgMHz: mhz.length ? Math.round(mhz.reduce((a, b) => a + b, 0) / mhz.length) : null,
-    coreMHz: mhz.slice(0, 12).map(Math.round), coreBusy: busy.slice(1, 13), tempC, tjmax: Math.round(tjmax),
+    coreBusy: busy.slice(1), tempC, tjmax: Math.round(tjmax),
   };
 }
 
@@ -252,8 +257,7 @@ const fleet = cached(15000, [] as any[], async () => {
   const j = json(await run(["tailscale", "status", "--json"], 4000)); if (!j) return [];
   const peers = [j.Self, ...Object.values(j.Peer || {})].filter(Boolean) as any[];
   const rows = peers.map((p) => ({ name: String(p.HostName || "").toLowerCase(), dns: String(p.DNSName || "").split(".")[0].toLowerCase(), online: p === j.Self ? true : p.Online === true, os: p.OS || "", ip: (p.TailscaleIPs || [])[0] || "", self: p === j.Self, lastSeen: p.LastSeen || "" }));
-  const pinned = FLEET.map((n) => rows.find((r) => r.name === n)).filter(Boolean) as any[];
-  return (pinned.length ? pinned : rows.slice(0, 8)).slice(0, 8);
+  return pickFleet(rows, FLEET, IGNORE);
 });
 
 // ---------------------------------------------------------------- ai agents (/proc)

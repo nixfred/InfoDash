@@ -31,3 +31,14 @@ function fmtAge(s) {
   return Math.floor(s / 86400) + "d"
 }
 function num(v, d) { return v === null || v === undefined || !isFinite(v) ? "--" : Number(v).toFixed(d === undefined ? 0 : d) }
+// A grid for n equal tiles in a w x h box with every row full: of the column
+// counts that divide n, the one that gives the biggest square tile.
+function gridFit(n, w, h) {
+  var best = { cols: 0, rows: 0 }, size = -1
+  for (var c = 1; c <= n; c++) {
+    if (n % c) continue
+    var t = Math.min(w / c, h / (n / c))
+    if (t > size) { size = t; best = { cols: c, rows: n / c } }
+  }
+  return best
+}

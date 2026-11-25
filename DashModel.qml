@@ -19,7 +19,7 @@ Item {
   property bool ready: false
   property string error: ""
   readonly property string collectorPath: Qt.resolvedUrl("collector.ts").toString().replace(/^file:\/\//, "")
-  readonly property string version: "0.2.2"
+  readonly property string version: "0.2.3"
 
   // --- layout store ------------------------------------------------------------
   // One file for every monitor: { "version": 1, "screens": { "DP-3": { panelId: {x,y,w,h} } } }.
@@ -53,11 +53,13 @@ Item {
   // ~/.config/omarchy/infodash/settings.json
   //   { "skin": id, "aiHost": "" | host name, "fontScale": 0.8 to 1.5,
   //     "fleet": ["host", ...]  (tailnet hosts to pin in the fleet panel; default: the first 8 peers),
+  //     "fleetIgnore": ["host", ...]  (tailnet hosts that are never shown),
   //     "snippetStrip": "regex"  (removed from the start of each last-said snippet) }
   property string skinId: Skins.DEFAULT
   property string aiHost: ""                 // "" = agent sessions of THIS machine
   property real fontScale: 1.0               // InfoDash's own text/UI size, independent of the system font size
   property var fleet: []
+  property var fleetIgnore: []
   property string snippetStrip: ""
   property bool settingsReady: false         // the file has been read (or found missing): scans may start
   property string _lastWritten: ""           // the newest file content this instance knows (its own write or the last reload)
@@ -111,7 +113,8 @@ Item {
         if (o && Skins.valid(o.skin)) root.skinId = o.skin
         if (o && typeof o.fontScale === "number" && o.fontScale >= root.fontMin && o.fontScale <= root.fontMax) root.fontScale = o.fontScale
         if (o && typeof o.aiHost === "string" && root.validHost(o.aiHost) && o.aiHost !== root.aiHost) { root.aiHost = o.aiHost; root.aiData = null; root.kickScan() }
-        if (o && Array.isArray(o.fleet)) root.fleet = o.fleet.filter(function(h) { return typeof h === "string" && h !== "" && root.validHost(h) }).slice(0, 16)
+        function hostList(a) { return Array.isArray(a) ? a.filter(function(h) { return typeof h === "string" && h !== "" && root.validHost(h) }).slice(0, 16) : [] }
+        if (o) { root.fleet = hostList(o.fleet); root.fleetIgnore = hostList(o.fleetIgnore) }
         if (o && typeof o.snippetStrip === "string" && o.snippetStrip.length < 400) root.snippetStrip = o.snippetStrip
       } catch (e) {}
       root.settingsReady = true
@@ -254,10 +257,18 @@ Item {
 
   // --- collector ---------------------------------------------------------------
   property bool pause: false
+  // the host lists are command line arguments, so a change means a restart
+  property bool _rehost: false
+  readonly property string hostKey: root.fleet.join(",") + "|" + root.fleetIgnore.join(",")
+  onHostKeyChanged: if (collector.running) { root._rehost = true; root.pause = true; rehost.restart() }
+  Timer { id: rehost; interval: 200; onTriggered: root.pause = false }
   Process {
     id: collector
-    command: ["bun", root.collectorPath, "--interval", String(root.intervalMs)].concat(root.fleet.length > 0 ? ["--fleet", root.fleet.join(",")] : [])
-    running: root.active && !root.pause
+    command: ["bun", root.collectorPath, "--interval", String(root.intervalMs)]
+      .concat(root.fleet.length > 0 ? ["--fleet", root.fleet.join(",")] : [])
+      .concat(root.fleetIgnore.length > 0 ? ["--ignore", root.fleetIgnore.join(",")] : [])
+    // not before the settings are read: a collector started earlier would miss the host lists
+    running: root.active && !root.pause && root.settingsReady
     stdout: SplitParser {
       splitMarker: "\n"
       onRead: function(line) {
@@ -269,7 +280,7 @@ Item {
       }
     }
     onExited: function(code) {
-      if (!root.active) return
+      if (!root.active || root._rehost) { root._rehost = false; return }
       root.error = "collector exited (" + code + "), retrying"
       root.pause = true
       retry.restart()

@@ -359,34 +359,23 @@ Item {
       v: view; title: "CPU"; tag: String(view.cpu.model || "")
       slot: "cpu"; animate: view.dragId !== slot; z: view.dragId === slot ? 50 : 1; opacity: view.dragId === slot ? 0.88 : 1
       x: view.rect(slot).x; y: view.rect(slot).y; width: view.rect(slot).w; height: view.rect(slot).h
-      Gauge {
+      Speedometer {
         id: cpuG
         v: view; width: Math.min(parent.width * 0.5, parent.height); height: parent.height
-        known: view.cpu.tempC !== null && view.cpu.tempC !== undefined
-        value: view.cpu.tempC || 0; minV: 20; maxV: view.cpu.tjmax || 100; warn: 0.85; unit: "C TCTL"; label: "CPU TEMPERATURE"
-        sub: "tjmax " + (view.cpu.tjmax || "--")
+        readonly property bool hasTemp: view.cpu.tempC !== null && view.cpu.tempC !== undefined
+        known: view.cpu.busyPct !== null && view.cpu.busyPct !== undefined
+        value: view.cpu.busyPct || 0; label: "CPU LOAD"
+        sub: [hasTemp ? Hud.num(view.cpu.tempC) + " C" : "", view.cpu.avgMHz ? view.cpu.avgMHz + " MHz" : ""].filter(function (x) { return x !== "" }).join("  \u00b7  ")
+        subColor: hasTemp && view.cpu.tempC > (view.cpu.tjmax || 100) * 0.9 ? view.danger : view.dim
       }
-      Column {
-        x: cpuG.width + Math.round(10 * view.u); width: parent.width - x; spacing: Math.round(3 * view.u)
-        KV { v: view; width: parent.width; k: "cores"; val: (view.cpu.cores || "--") + "C / " + (view.cpu.threads || "--") + "T" }
-        KV { v: view; width: parent.width; k: "busy"; val: Hud.num(view.cpu.busyPct) + "%" }
-        KV { v: view; width: parent.width; k: "clk avg"; val: view.cpu.avgMHz ? view.cpu.avgMHz + " MHz" : "--" }
-        T { text: view.cpu.coreMHz && view.cpu.coreMHz.length ? "CORE MHZ 0-" + (view.cpu.coreMHz.length - 1) : "CORE BUSY %"; sz: 9; u: view.u; mono: view.mono; c: view.dim; font.letterSpacing: 1 * view.u }
-        Item {
-          width: parent.width; height: Math.round(26 * view.u)
-          readonly property var arr: view.cpu.coreMHz && view.cpu.coreMHz.length ? view.cpu.coreMHz : (view.cpu.coreBusy || [])
-          readonly property real peak: view.cpu.coreMHz && view.cpu.coreMHz.length ? Math.max.apply(null, arr.concat([1])) : 100
-          Repeater {
-            model: parent.arr.length
-            Rectangle {
-              width: Math.max(2, parent.width / Math.max(1, parent.arr.length) - 2); x: index * (width + 2)
-              height: Math.max(2, parent.height * Hud.clamp(parent.arr[index] / parent.peak, 0, 1)); anchors.bottom: parent.bottom
-              color: Hud.rgba(view.accent, 0.8)
-            }
-          }
+      Item {
+        x: cpuG.width + Math.round(10 * view.u); width: parent.width - x; height: parent.height
+        T { id: cpuCount; width: parent.width; horizontalAlignment: Text.AlignHCenter; text: (view.cpu.cores || "--") + " CORES \u00b7 " + (view.cpu.threads || "--") + " CPUS"; sz: 9; u: view.u; mono: view.mono; c: view.dim; font.letterSpacing: 1 * view.u }
+        CoreCluster {
+          v: view; width: parent.width
+          anchors { top: cpuCount.bottom; topMargin: Math.round(4 * view.u); bottom: parent.bottom }
+          values: view.cpu.coreBusy || []
         }
-        T { text: "TCTL LAST " + (view.hist.cpuTemp.length * 2) + "S"; sz: 9; u: view.u; mono: view.mono; c: view.dim; font.letterSpacing: 1 * view.u }
-        Spark { v: view; width: parent.width; height: Math.round(34 * view.u); values: view.hist.cpuTemp }
       }
     }
 
