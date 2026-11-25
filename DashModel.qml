@@ -19,7 +19,7 @@ Item {
   property bool ready: false
   property string error: ""
   readonly property string collectorPath: Qt.resolvedUrl("collector.ts").toString().replace(/^file:\/\//, "")
-  readonly property string version: "0.1.0"
+  readonly property string version: "0.2.0"
 
   // --- layout store ------------------------------------------------------------
   // One file for every monitor: { "version": 1, "screens": { "DP-3": { panelId: {x,y,w,h} } } }.
