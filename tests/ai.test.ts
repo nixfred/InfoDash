@@ -6,7 +6,7 @@ import { join } from "node:path";
 
 const src = readFileSync(new URL("../Ai.js", import.meta.url), "utf8").replace(/^\.pragma library.*$/m, "");
 const SCRIPT = readFileSync(new URL("../scan.sh", import.meta.url), "utf8");
-const A: any = new Function(src + "; return { sections, build, working, ago, etime, homeShort, clean, findHerdrWindow, sshTarget };")();
+const A: any = new Function(src + "; return { sections, build, scanResult, scanError, working, ago, etime, homeShort, clean, findHerdrWindow, sshTarget };")();
 
 const agent = (o: any) => ({ agent: "claude", agent_status: "idle", cwd: "/p/a", pane_id: "w1:p1", workspace_id: "w1", terminal_title_stripped: "T", agent_session: { value: "id1" }, ...o });
 const scan = (agents: any[], ws: any[], proc = "", snip = "") =>
@@ -154,4 +154,62 @@ test("sshTarget parses options, user@host and the remote command", () => {
   expect(A.sshTarget("ssh -p 2222 -i /k me@box herdr --x")).toEqual({ host: "box", cmd: "herdr --x" });
   expect(A.sshTarget("ssh -o BatchMode=yes -- box ls")).toEqual({ host: "box", cmd: "ls" });
   expect(A.sshTarget("ssh")).toBeNull();
+});
+
+// ---- a dropped link must never look like "no sessions" or "idle" -------------------------------
+const GOOD = "##NOW\n1000\n##AGENTS\n" + JSON.stringify({ result: { agents: [{ pane_id: "p1", agent: "claude", agent_status: "working", cwd: "/w/a", workspace_id: "w1", terminal_title: "T" }] } }) + "\n##WS\n" + JSON.stringify({ result: { workspaces: [{ workspace_id: "w1", label: "alpha" }] } }) + "\n##PROC\n##SNIP\n";
+
+test("a good scan is live, not stale", () => {
+  const r = A.scanResult(null, "box", GOOD, "", 5000);
+  expect(r.stale).toBe(false);
+  expect(r.error).toBe("");
+  expect(r.okTs).toBe(5000);
+  expect(r.rows.length).toBe(1);
+  expect(r.rows[0].status).toBe("working");
+});
+test("a failed scan after a good one keeps the rows and marks them stale", () => {
+  const ok = A.scanResult(null, "box", GOOD, "", 5000);
+  const bad = A.scanResult(ok, "box", "", "", 9000);
+  expect(bad.stale).toBe(true);
+  expect(bad.rows).toEqual(ok.rows);
+  expect(bad.okTs).toBe(5000);
+  expect(bad.ts).toBe(9000);
+  expect(bad.error).toBe("ssh box: no data");
+  // still failing: still stale, okTs does not move
+  const bad2 = A.scanResult(bad, "box", "garbage", "", 14000);
+  expect(bad2.stale).toBe(true);
+  expect(bad2.okTs).toBe(5000);
+  expect(bad2.rows.length).toBe(1);
+});
+test("the next good scan clears the stale state", () => {
+  const ok = A.scanResult(null, "box", GOOD, "", 5000);
+  const bad = A.scanResult(ok, "box", "", "", 9000);
+  const back = A.scanResult(bad, "box", GOOD, "", 20000);
+  expect(back.stale).toBe(false);
+  expect(back.error).toBe("");
+  expect(back.okTs).toBe(20000);
+});
+test("a failure with nothing seen yet is an error, not stale rows", () => {
+  const r = A.scanResult(null, "box", "", "", 1);
+  expect(r.stale).toBe(false);
+  expect(r.rows).toEqual([]);
+  expect(r.error).toBe("ssh box: no data");
+  expect(A.scanResult(null, "", "", "", 1).error).toBe("scan failed");
+});
+test("rows from another host are never carried over", () => {
+  const ok = A.scanResult(null, "one", GOOD, "", 5000);
+  const r = A.scanResult(ok, "two", "", "", 9000);
+  expect(r.rows).toEqual([]);
+  expect(r.stale).toBe(false);
+});
+test("the stderr line replaces the error text but keeps rows and staleness", () => {
+  const ok = A.scanResult(null, "box", GOOD, "", 5000);
+  const bad = A.scanResult(ok, "box", "", "", 9000);
+  const e = A.scanError(bad, "box", "Connection timed out");
+  expect(e.error).toBe("ssh box: Connection timed out");
+  expect(e.stale).toBe(true);
+  expect(e.rows).toEqual(ok.rows);
+  expect(e.okTs).toBe(5000);
+  expect(A.scanError(ok, "box", "noise")).toBe(ok);     // a good scan has no error to replace
+  expect(A.scanError(null, "box", "x")).toBeNull();
 });

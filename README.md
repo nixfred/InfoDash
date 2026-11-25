@@ -7,7 +7,7 @@
   <img alt="Omarchy plugin" src="https://img.shields.io/badge/Omarchy-plugin-0c9793?style=flat-square">
   <img alt="Quickshell" src="https://img.shields.io/badge/Quickshell-QML-17a07e?style=flat-square">
   <img alt="bun" src="https://img.shields.io/badge/collector-bun-89e0b7?style=flat-square">
-  <img alt="33 tests" src="https://img.shields.io/badge/tests-33%20passing-52ca9a?style=flat-square">
+  <img alt="39 tests" src="https://img.shields.io/badge/tests-39%20passing-52ca9a?style=flat-square">
 </p>
 
 **InfoDash** paints a full live dashboard over your [Omarchy](https://omarchy.org) wallpaper: CPU, memory, GPU and storage gauges, USB topology, network and PCIe links, PipeWire routing, your tailnet, and the **AI coding sessions** running on this machine or on any other machine you can ssh to. One key hides your windows behind it. Another key shows or hides the panels.
@@ -131,6 +131,8 @@ The biggest panel is a live list of your coding agents. Each row shows:
 
 Rows are ordered blocked, then working, then idle, then done, newest first. Agent processes that herdr does not know about appear as `NOT IN HERDR` rows.
 
+**When the link drops.** If the ssh connection to the scanned host fails while you are watching it, the panel keeps the last sessions it saw instead of clearing them, and says so: the tag becomes `LINK LOST`, a red line next to the host chip shows how long ago the host was last seen, every row reads `LAST SEEN WORKING` (or idle, or blocked) instead of a live status, the working dot stops pulsing, and rows stop being clickable. A host that is up and idle never looks like that. The next successful scan, every 5 seconds, puts the live view back.
+
 **Looking at another machine.** Click the `HOST` chip and pick any machine on your tailnet. InfoDash runs the scan there over `ssh` (a persistent, non-interactive connection), so you can watch the work happening on a build box while you sit at your laptop.
 
 **Click to jump.** Clicking a row that is open in herdr does two things: it selects that session in herdr on the machine where it runs, then finds the herdr window on *your* machine and focuses it. If the session is not in herdr, nothing happens (InfoDash never opens one for you).
@@ -224,6 +226,7 @@ flowchart LR
 |---|---|
 | The panels show `COLLECTING...` | check that `bun` is installed (`which bun`) and run `omarchy restart shell` |
 | `UPDATING` instead of `LIVE` | the collector missed a tick; it recovers on its own, `omarchy restart shell` if it does not |
+| `LINK LOST` in the AI sessions panel | the ssh connection to that host failed; the rows are the last ones seen. It clears by itself when the host answers again |
 | AI sessions panel is empty on another host | check that plain `ssh <host>` works without a prompt (key auth), and that the host runs herdr or an agent |
 | Clicking a session does nothing | the session is not open in herdr, or herdr is not installed on that host |
 | Text too small or too large | `SKIN` chip, then `A-` / `A+` (80% to 150%) |

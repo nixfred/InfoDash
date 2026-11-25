@@ -38,6 +38,9 @@ Item {
   readonly property bool aiReady: !!aiData && aiData.host === aiHost
   readonly property var ai: aiReady ? aiData.rows : []
   readonly property string aiError: aiReady ? aiData.error : ""
+  // the link to the scanned host dropped: the rows are the last ones seen, not live
+  readonly property bool aiStale: aiReady && !!aiData.stale
+  readonly property real aiStaleSec: aiStale && desk ? Math.max(0, Math.round((desk.nowMs - aiData.okTs) / 1000)) : 0
   function statusColor(st) { return st === "working" ? accent : (st === "blocked" ? danger : (st === "done" ? ok : dim)) }
   readonly property var led: s.ledger || ({})
   readonly property var hist: s.hist || ({ cpuTemp: [], memGB: [], rootPct: [] })
@@ -275,7 +278,7 @@ Item {
     HudPanel {
       id: aiPanel
       v: view; title: "AI SESSIONS"
-      tag: (view.aiHost !== "" ? view.aiHost.toUpperCase() + " \u00B7 " : "") + (Ai.working(view.ai) > 0 ? Ai.working(view.ai) + " WORKING \u00B7 " : "") + view.ai.length + " LIVE"
+      tag: (view.aiHost !== "" ? view.aiHost.toUpperCase() + " \u00B7 " : "") + (view.aiStale ? "LINK LOST" : (Ai.working(view.ai) > 0 ? Ai.working(view.ai) + " WORKING \u00B7 " : "") + view.ai.length + " LIVE")
       slot: "ai"; animate: view.dragId !== slot; z: view.dragId === slot ? 50 : 1; opacity: view.dragId === slot ? 0.88 : 1
       x: view.rect(slot).x; y: view.rect(slot).y; width: view.rect(slot).w; height: view.rect(slot).h
       readonly property real rowH: Math.round(62 * view.u)
@@ -289,6 +292,13 @@ Item {
         active: view.aiHost !== ""
         visible: view.interactive
         onClicked: view.toggleHostMenu(hostChip)
+      }
+      T {   // the host link dropped: say so next to the chip, the rows below are the last known state
+        visible: view.aiStale
+        x: hostChip.width + Math.round(12 * view.u); y: Math.round((hostChip.height - implicitHeight) / 2)
+        width: Math.max(0, parent.width - x)
+        text: "LINK LOST \u00B7 LAST SEEN " + Ai.ago(view.aiStaleSec) + " AGO \u00B7 SHOWING LAST KNOWN STATE"
+        sz: 9; u: view.u; mono: view.mono; c: view.danger; font.bold: true; font.letterSpacing: 0.6 * view.u
       }
       Column {
         y: aiPanel.headH
@@ -307,14 +317,14 @@ Item {
               x: Math.round(3 * view.u); y: Math.round(7 * view.u); width: Math.round(8 * view.u); height: width; radius: width / 2
               color: rowItem.herdr ? view.statusColor(row.status) : "transparent"
               border.width: 1; border.color: rowItem.herdr ? view.statusColor(row.status) : view.dim
-              SequentialAnimation on opacity { running: rowItem.herdr && row.status === "working"; loops: Animation.Infinite
+              SequentialAnimation on opacity { running: rowItem.herdr && row.status === "working" && !view.aiStale; loops: Animation.Infinite
                 NumberAnimation { to: 0.3; duration: 700 } NumberAnimation { to: 1.0; duration: 700 } }
             }
             // line 1: workspace (or folder) and, right, status and how long ago it was active
             T { x: Math.round(18 * view.u); y: Math.round(2 * view.u); width: parent.width * 0.55
                 text: String(rowItem.herdr ? row.ws : row.project).toUpperCase(); sz: 11; u: view.u; mono: view.mono; c: view.ink; font.bold: true }
             T { anchors.right: parent.right; y: Math.round(3 * view.u); width: parent.width * 0.42; horizontalAlignment: Text.AlignRight
-                text: rowItem.herdr ? (String(row.status).toUpperCase() + (row.activeSec >= 0 ? "  \u00B7  " + Ai.ago(row.activeSec) : ""))
+                text: rowItem.herdr ? ((view.aiStale ? "LAST SEEN  " : "") + String(row.status).toUpperCase() + (row.activeSec >= 0 ? "  \u00B7  " + Ai.ago(row.activeSec) : ""))
                                     : ("NOT IN HERDR  \u00B7  " + Ai.ago(row.ageSec))
                 sz: 9; u: view.u; mono: view.mono; c: rowItem.herdr ? view.statusColor(row.status) : view.dim; font.letterSpacing: 0.8 * view.u }
             // line 2: the session's own title
@@ -330,7 +340,7 @@ Item {
             MouseArea {
               id: rowMa
               anchors.fill: parent
-              enabled: rowItem.herdr && view.interactive && !!view.desk
+              enabled: rowItem.herdr && view.interactive && !!view.desk && !view.aiStale
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
               onClicked: view.desk.focusAiPane(row.paneId)

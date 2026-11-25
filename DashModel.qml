@@ -19,7 +19,7 @@ Item {
   property bool ready: false
   property string error: ""
   readonly property string collectorPath: Qt.resolvedUrl("collector.ts").toString().replace(/^file:\/\//, "")
-  readonly property string version: "0.2.1"
+  readonly property string version: "0.2.2"
 
   // --- layout store ------------------------------------------------------------
   // One file for every monitor: { "version": 1, "screens": { "DP-3": { panelId: {x,y,w,h} } } }.
@@ -158,16 +158,14 @@ Item {
     stdout: StdioCollector {
       onStreamFinished: {
         if (root._runHost !== root.aiHost) return                     // a late result for a host that is no longer selected
-        var t = String(text), h = root._runHost
-        if (t.indexOf("##NOW") >= 0) root.aiData = { host: h, rows: Ai.build(t, { strip: root.snippetStrip }), error: "", ts: Date.now() }
-        else root.aiData = { host: h, rows: [], error: (h === "" ? "scan failed" : "ssh " + h + ": no data"), ts: Date.now() }
+        root.aiData = Ai.scanResult(root.aiData, root._runHost, String(text), root.snippetStrip, Date.now())
       }
     }
     stderr: StdioCollector {
       onStreamFinished: {
         if (root._runHost !== root.aiHost) return
         var e = String(text).trim().split("\n").pop()
-        if (e !== "" && root.aiData && root.aiData.error !== "") root.aiData = { host: root.aiData.host, rows: [], error: (root._runHost === "" ? "" : "ssh " + root._runHost + ": ") + e, ts: root.aiData.ts }
+        if (e !== "") root.aiData = Ai.scanError(root.aiData, root._runHost, e)
       }
     }
   }

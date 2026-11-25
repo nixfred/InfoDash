@@ -103,6 +103,21 @@ function build(text, opts) {
   return rows.concat(extras)
 }
 
+// The panel state after one scan of `host`. A scan that fails (ssh dropped, host asleep) keeps the last
+// good rows and marks them stale, so a lost link is never mistaken for "no sessions" or "idle".
+// prev: the previous state or null. Returns { host, rows, error, ts, okTs, stale }.
+function scanResult(prev, host, text, strip, now) {
+  var keep = prev && prev.host === host ? prev : null
+  if (String(text || "").indexOf("##NOW") >= 0) return { host: host, rows: build(text, { strip: strip }), error: "", ts: now, okTs: now, stale: false }
+  return { host: host, rows: keep ? keep.rows : [], error: host === "" ? "scan failed" : "ssh " + host + ": no data",
+           ts: now, okTs: keep ? keep.okTs : 0, stale: !!keep && keep.okTs > 0 }
+}
+// The last stderr line of a failed scan replaces the generic error; rows and staleness are kept.
+function scanError(cur, host, msg) {
+  if (!cur || cur.error === "") return cur
+  return { host: cur.host, rows: cur.rows, error: (host === "" ? "" : "ssh " + host + ": ") + msg, ts: cur.ts, okTs: cur.okTs, stale: cur.stale }
+}
+
 function working(rows) { var n = 0; for (var i = 0; i < rows.length; i++) if (rows[i].kind === "herdr" && rows[i].status === "working") n++; return n }
 
 function ago(sec) {
