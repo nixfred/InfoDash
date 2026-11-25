@@ -19,7 +19,7 @@ Item {
   property bool ready: false
   property string error: ""
   readonly property string collectorPath: Qt.resolvedUrl("collector.ts").toString().replace(/^file:\/\//, "")
-  readonly property string version: "0.2.0"
+  readonly property string version: "0.2.1"
 
   // --- layout store ------------------------------------------------------------
   // One file for every monitor: { "version": 1, "screens": { "DP-3": { panelId: {x,y,w,h} } } }.
@@ -176,6 +176,15 @@ Item {
   // open in herdr nothing happens (its row is not clickable, and herdr refuses an unknown pane).
   property string focusHost: ""
   signal focusJumped()
+  // The two links in the header. Only these exact addresses are ever opened, in the default browser;
+  // the summon overlay closes so the browser is not hidden behind it.
+  readonly property var links: ({ site: "https://nixfred.com", repo: "https://github.com/nixfred/InfoDash" })
+  function openLink(which) {
+    var url = root.links[which]
+    if (!url) return
+    Quickshell.execDetached(["xdg-open", url])
+    root.focusJumped()
+  }
   Process {
     id: aiFocus
     onExited: function(code) { if (code === 0 && !winFind.running) winFind.running = true }

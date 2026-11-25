@@ -192,6 +192,34 @@ Item {
     // ---- header ----------------------------------------------------------------
     readonly property real hH: Math.round(60 * view.u)
     T { x: Math.round(8 * view.u); y: Math.round(4 * view.u); text: "INFODASH"; sz: 30; u: view.u; mono: view.mono; c: view.ink; font.letterSpacing: 9 * view.u; elide: Text.ElideNone }
+    // brand line: "by @nixfred" + mark opens nixfred.com, the repo address opens the project page
+    Item {
+      id: brand
+      x: Math.round(10 * view.u); y: Math.round(43 * view.u)
+      width: byText.implicitWidth + markImg.width + repoText.implicitWidth + Math.round(30 * view.u)
+      height: Math.round(15 * view.u)
+      Row {
+        spacing: Math.round(6 * view.u)
+        anchors.verticalCenter: parent.verticalCenter
+        Item {
+          width: byText.implicitWidth + markImg.width + Math.round(5 * view.u); height: Math.round(15 * view.u)
+          T { id: byText; anchors.verticalCenter: parent.verticalCenter; text: "by @nixfred"; sz: 10; u: view.u; mono: view.mono; c: view.ink; font.underline: siteHit.containsMouse; font.letterSpacing: 1 * view.u }
+          Image {
+            id: markImg
+            anchors.left: byText.right; anchors.leftMargin: Math.round(5 * view.u); anchors.verticalCenter: parent.verticalCenter
+            width: Math.round(15 * view.u); height: width
+            source: Qt.resolvedUrl("assets/nixfred-mark.png"); sourceSize: Qt.size(64, 64)
+            smooth: true; mipmap: true; asynchronous: true
+          }
+          MouseArea { id: siteHit; anchors.fill: parent; enabled: view.interactive; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: if (view.desk) view.desk.openLink("site") }
+        }
+        Item {
+          width: repoText.implicitWidth; height: Math.round(15 * view.u)
+          T { id: repoText; anchors.verticalCenter: parent.verticalCenter; text: "github.com/nixfred/InfoDash"; sz: 10; u: view.u; mono: view.mono; c: view.ink; font.underline: repoHit.containsMouse; font.letterSpacing: 0.5 * view.u }
+          MouseArea { id: repoHit; anchors.fill: parent; enabled: view.interactive; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: if (view.desk) view.desk.openLink("repo") }
+        }
+      }
+    }
     T { id: screenLabel; x: Math.round(300 * view.u); y: Math.round(24 * view.u); text: view.screenName; sz: 10; u: view.u; mono: view.mono; c: view.dim; font.letterSpacing: 1.5 * view.u }
     // skin switcher: quiet chip beside the monitor name, strip opens on click
     MouseArea { anchors.fill: parent; z: 90; visible: picker.open || view.hostMenuOpen; onClicked: { picker.open = false; view.hostMenuOpen = false } }

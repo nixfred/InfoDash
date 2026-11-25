@@ -3,3 +3,4 @@ DESIGN-layout.html
 *.old
 .DS_Store
 node_modules/
+x/
