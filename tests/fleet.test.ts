@@ -15,5 +15,8 @@ test("an ignored host does not use up one of the places", () => {
   expect(names(pickFleet(rows, [], ["alpha"], 2))).toEqual(["me", "beta"]);
 });
 test("pins keep their order, match either name and never repeat", () => {
-  expect(names(pickFleet(rows, ["gamma", "alpha", "alpha-gw"], []))).toEqual(["gamma", "alpha-gw"]);
+  expect(names(pickFleet(rows, ["gamma", "alpha-gw", "alpha"], []))).toEqual(["gamma", "alpha-gw"]);
+});
+test("a host pinned by its DNS name is shown under that name", () => {
+  expect(pickFleet(rows, ["alpha"], [])).toEqual([{ name: "alpha", dns: "alpha" }]);
 });

@@ -7,7 +7,7 @@
   <img alt="Omarchy plugin" src="https://img.shields.io/badge/Omarchy-plugin-0c9793?style=flat-square">
   <img alt="Quickshell" src="https://img.shields.io/badge/Quickshell-QML-17a07e?style=flat-square">
   <img alt="bun" src="https://img.shields.io/badge/collector-bun-89e0b7?style=flat-square">
-  <img alt="46 tests" src="https://img.shields.io/badge/tests-46%20passing-52ca9a?style=flat-square">
+  <img alt="47 tests" src="https://img.shields.io/badge/tests-47%20passing-52ca9a?style=flat-square">
 </p>
 
 **InfoDash** paints a full live dashboard over your [Omarchy](https://omarchy.org) wallpaper: a CPU speedometer with a dial for every CPU, memory, GPU and storage gauges, USB topology, network and PCIe links, PipeWire routing, your tailnet, and the **AI coding sessions** running on this machine or on any other machine you can ssh to. One key hides your windows behind it. Another key shows or hides the panels.
