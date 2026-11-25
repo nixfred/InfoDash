@@ -1,0 +1,25 @@
+InfoDash is out. A live HUD for Omarchy that sits on your wallpaper: CPU, memory, GPU and storage gauges, USB topology, network and PCIe links, PipeWire routing, your tailnet, and every AI coding session running on any machine you can ssh to.
+
+First, the credit. Marcel (@_nexuslink) took my Infomarchy overlay idea and built a HUD of his own on it. When I saw his screenshot I wanted that on all my screens. InfoDash is that idea, built on Infomarchy's overlay code. Thanks Marcel, this started with you.
+
+What it does:
+
+SUPER+D hides the app you are in behind a clear background with the dashboard on it. SUPER+I shows or hides just the panels. Neither one brings the app back by accident.
+
+Hold CTRL and drag any panel to move it, drag an edge or corner to resize it. Everything snaps to a 48 x 24 grid and the other panels slide out of the way. One layout per monitor.
+
+Nine skins: Star Trek (the default), Cyberpunk 2077, Steampunk, Art Deco, 8-bit, Blueprint, Nostromo, Cassette and Diesel. Colors always follow your Omarchy theme. A skin only changes the shapes, the type and the gauges, so every theme switch restyles the whole thing.
+
+The AI sessions panel shows status, title, model and the last thing the agent said, for every Claude Code and Codex session. Pick any machine on your tailnet from the host chip. I sit at one box and watch the work running on another.
+
+Click a session and herdr selects it on the machine it runs on, then my focus jumps to the herdr window. If the session is not open in herdr, nothing happens.
+
+Its own text size, 80 to 150 percent, separate from the system font. All text is one brightness, hierarchy comes from size and weight.
+
+Read-only collector in bun, a snapshot every 2 seconds. 33 tests. MIT.
+
+Install:
+git clone https://github.com/nixfred/InfoDash ~/.config/omarchy/plugins/nixfred.infodash
+omarchy plugin enable nixfred.infodash
+
+github.com/nixfred/InfoDash
