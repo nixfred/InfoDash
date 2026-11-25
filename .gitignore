@@ -1,0 +1,5 @@
+# local design notes and scratch
+DESIGN-layout.html
+*.old
+.DS_Store
+node_modules/
