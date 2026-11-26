@@ -41,9 +41,15 @@ Scope {
     if (typeof Util.isVideoPath === "function") return Util.isVideoPath(path)
     return /\.(mp4|m4v|mov|webm|mkv|avi)$/i.test(String(path || ""))
   }
-  // A video wallpaper is Omarchy's own daemon on its own layer: step aside for it.
+  // OWE (Omarchy's wallpaper engine) hands the screen to its renderer for intros and video
+  // wallpapers with `omarchy-shell background setSuspended true|false`. The stock background
+  // answers it; a clone that does not makes OWE fall back to switching omarchy.background off and
+  // on, and the shell reads that as "restore the stock source" and DELETES this plugin from
+  // shell.json (InfoDash died on every theme change). So answer it, like the stock plugin does.
+  property bool suspended: false
+  // A video wallpaper (or an intro) is Omarchy's own daemon on its own layer: step aside for it.
   readonly property bool videoBackground: root.isVideo(root.background)
-  readonly property bool passthrough: root.videoBackground
+  readonly property bool passthrough: root.videoBackground || root.suspended
   function refreshBackground() { if (!readlinkProc.running) readlinkProc.running = true }
   function setBackground(path) { root.background = String(path || "").trim() }
   function applyThemePayload(colorsB64, shellB64) {
@@ -87,6 +93,10 @@ Scope {
     function refresh(): void { root.refreshBackground() }
     function set(path: string): void { root.setBackground(path) }
     function setInstant(path: string): void { root.setBackground(path) }
+    // Must exist and exit 0: if it fails OWE removes this plugin from shell.json (see `suspended`).
+    function setSuspended(value: string): void { root.suspended = String(value) === "true" }
+    // omarchy-theme-set announces the next wallpaper so a layer can decode it early; nothing to warm here.
+    function prepare(path: string): void { }
     function transition(fromPath: string, path: string): void { root.setBackground(path) }
     function themeTransition(fromPath: string, path: string, finalPath: string, colorsB64: string, shellB64: string): void {
       root.themeTransition(fromPath, path, finalPath, colorsB64, shellB64)
