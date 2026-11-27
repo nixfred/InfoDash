@@ -12,6 +12,7 @@ import { readFileSync, readdirSync, readlinkSync, realpathSync } from "node:fs";
 import { hostname, homedir } from "node:os";
 import { rename } from "node:fs/promises";
 import { pickFleet } from "./fleet.ts";
+import { POWER_PROFILE_CMD, parseActiveProfile } from "./power.ts";
 
 const argv = process.argv.slice(2);
 const opt = (name: string, dflt: string) => { const i = argv.indexOf(name); return i >= 0 && argv[i + 1] ? argv[i + 1] : dflt; };
@@ -275,8 +276,8 @@ const ai = cached(4000, { sessions: [] as any[] }, async () => {
 
 // ---------------------------------------------------------------- ledger
 const ledger = cached(5000, { theme: "", powerProfile: "", nightlight: null as boolean | null }, async () => {
-  const [th, pp, nl] = await Promise.all([run(["omarchy-theme-current"], 2000), run(["powerprofilesctl", "get"], 2000), run(["omarchy-toggle-nightlight", "--status"], 2000)]);
-  return { theme: th.trim() || rd(`${homedir()}/.local/state/omarchy/current/theme.name`), powerProfile: pp.trim(), nightlight: (json(nl) || {}).enabled ?? null };
+  const [th, pp, nl] = await Promise.all([run(["omarchy-theme-current"], 2000), run(POWER_PROFILE_CMD, 2000), run(["omarchy-toggle-nightlight", "--status"], 2000)]);
+  return { theme: th.trim() || rd(`${homedir()}/.local/state/omarchy/current/theme.name`), powerProfile: parseActiveProfile(pp), nightlight: (json(nl) || {}).enabled ?? null };
 });
 const updates = cached(900000, { count: null as number | null }, async () => {
   const out = await runRaw(["checkupdates", "--nocolor"], 60000, [0, 2]);   // exit 2 = nothing to update; anything else (or a timeout) = unknown
