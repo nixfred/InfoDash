@@ -47,6 +47,21 @@ Scope {
   // on, and the shell reads that as "restore the stock source" and DELETES this plugin from
   // shell.json (InfoDash died on every theme change). So answer it, like the stock plugin does.
   property bool suspended: false
+  // At a theme switch with an intro the shell maps a cover (a still of the outgoing wallpaper)
+  // on the Bottom layer under this surface's namespace. It is mapped after the HUD, so it stacks
+  // above it and hides the panels until it closes, most of a second. Hyprland restacks a layer
+  // surface last in its new layer when its layer changes, so step down to Background and back up:
+  // the cover already hides the HUD for those few frames, and the HUD returns above it.
+  property bool restacking: false
+  Timer { id: restackTimer; interval: 50; onTriggered: root.restacking = false }
+  Connections {
+    target: Hyprland
+    function onRawEvent(event) {
+      if (event.name !== "openlayer" || event.data !== "omarchy-background" || root.restacking) return
+      root.restacking = true
+      restackTimer.restart()
+    }
+  }
   // A video wallpaper (or an intro) is Omarchy's own daemon on its own layer: step aside for it.
   readonly property bool videoBackground: root.isVideo(root.background)
   readonly property bool passthrough: root.videoBackground || root.suspended
@@ -150,7 +165,7 @@ Scope {
       WlrLayershell.namespace: "omarchy-background"
       // Bottom (above the wallpaper layer, below every window) with on-demand focus: a surface
       // only learns that CTRL is held while it has keyboard focus, and CTRL+drag edits the layout.
-      WlrLayershell.layer: WlrLayer.Bottom
+      WlrLayershell.layer: root.restacking ? WlrLayer.Background : WlrLayer.Bottom
       WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
       exclusionMode: ExclusionMode.Ignore
       updatesEnabled: true
