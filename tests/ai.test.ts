@@ -59,7 +59,7 @@ test("a command that prints no trailing newline cannot swallow the next section 
 });
 test("snippets: JSON escapes decoded, control and bidi characters removed, optional strip pattern applied", () => {
   expect(A.clean("He said \\\"hi\\\" there\\nand \\u00e9")).toBe("He said \"hi\" there and é");
-  expect(A.clean("abc‮def\u0007ghi")).toBe("abc def ghi");
+  expect(A.clean("abc\u202edef\u0007ghi")).toBe("abc def ghi");
   expect(A.clean("BANNER v1 ==== Real content", "^BANNER[^=]*=+\\s*")).toBe("Real content");
   expect(A.clean("text", "(unclosed")).toBe("text");                       // a bad pattern is ignored, never thrown
 });
