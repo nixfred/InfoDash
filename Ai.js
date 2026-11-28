@@ -36,7 +36,7 @@ function normCwd(p) { return String(p || "").replace(/\/+$/, "") }
 function clean(s, strip) {
   s = String(s || "").replace(/\\u([0-9a-fA-F]{4})/g, function(m, h) { return String.fromCharCode(parseInt(h, 16)) })
   s = s.replace(/\\n/g, " ").replace(/\\t/g, " ").replace(/\\"/g, "\"").replace(/\\\\/g, "\\")
-  s = s.replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩﻿]/g, " ")
+  s = s.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, " ")
   if (strip) { try { s = s.replace(new RegExp(strip), "") } catch (e) {} }
   return s.replace(/\s+/g, " ").trim()
 }
